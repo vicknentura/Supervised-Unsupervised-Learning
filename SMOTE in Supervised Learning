@@ -1,0 +1,139 @@
+One approach to addressing imbalanced datasets is to oversample the minority class. The simplest approach involved duplicating examples in the minority calss, although these examples don't add any new information to the model.
+
+Instead, new examples can be synthesized from the existing examples. This is a type of data augmentation for the minority class and is referred to as the Synthetic Minority Oversampling Technique, or SMOTE for short.
+
+SMOTE works by selecting examples that are close in the feature space, drawing a line between the examples in the feature space and drawing a new sample at a point along that line.
+1. A random example from the minority class is first chosen
+2. Then k of the nearest neighbors for that example are found (typically k=5)
+3. A randomly selected neighbor is chosen and a synthetic example is created at a randomly selected point between the two examples in feature space.
+
+
+Create a synthetic binary classification dataset with 10,000 examples and a 1:100 class distribution
+from collections import Counter
+from sklearn.datasets import make_classification
+from matplotlib import pyplot
+from numpy import where
+
+X, y = make_classification(n_samples=1000, n_features=2, n_redundant=0,
+                           n_clusters_per_class=1, weights=[0.99], flip_y=0, random_state=12)
+
+counter = counter(y)
+print(counter)
+
+for label, _ in counter.items():
+    row_ix = where(y == label)[0]
+    pyplot.scatter(X[row_ix, 0], X[row_ix, 1], label=str(label))
+pyplot.legend()
+pyplot.show()
+
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+
+data = pd.read_csv('creditcard.csv')
+data.head(3)
+
+pd.value_counts(data['Class']).plot.bar()
+plt.title('Faurd class histogram')
+plt.xlabel('Class')
+plt.ylabel('Frequency')
+data['Class'].value_counts()
+
+
+X = data.drop('Class', axis=1)
+y = data['Class']
+print('Shape of X: {}'.format(X.shape))
+print('Shape of y: {}'.format(y.shape))
+
+
+from sklearn.model_selection import train_test_split
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
+
+print("Number transactions X_train dataset: ", X_train.shape)
+print("Number transactions y_train dataset: ", y_train.shape)
+print("Number transactions X_test dataset: ", X_test.shape)
+print("Number transactions y_test dataset: ", y_test.shape)
+
+
+
+from sklearn.preprocessing import StandardScaler
+
+scaler = StandardScaler()
+X_train['normAmount'] = scaler.fit_transform(X_train[['Amount']])
+X_train = X_train.drop(['Time', 'Amount'], axis=1)
+
+X_test['normAmount'] = scaler.transform(X_test[['Amount']])
+X_test = X_test.drop(['Time', 'Amount'], axis=1)
+
+
+
+from imblearn.over_sampling import SMOTE
+
+sm = SMOTE(random_state=123)
+X_train_res, y_train_res = sm.fit_resample(X_train, y_train)
+y_train.value_counts()
+y_train_res.value_counts()
+
+
+# Train the model
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import confusion matrix, roc_auc_score, plot_roc_curve
+
+model = LogisticRegression()
+model = LogisticRegression(C=4)
+model.fit(X_train_res, y_train_res)
+
+
+
+# Test the model
+y_pred = model.predict(X_test)
+print("ROC/AUC: {}".format(roc_auc_score(y_test, y_pred)))
+cf_matrix = confusion_matrix(y_test, y_pred)
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+plt.figure(figsize=(10, 5), dpi=80)
+
+ax = sns.heatmap(cf_matrix, annot=True, cmap='Blues', fmt='g')
+
+ax.set_xlabel('\nPredicted Values')
+ax.set_ylabel('Actual Values ');
+
+ax.xaxis.set_ticklabels(['False', 'True'])
+ax.yaxis.set_ticklabels(['False', 'True'])
+
+plt.show()
+
+
+
+y_pred_one_test = model.predict_proba(X_test)[:1]
+
+from sklearn.metrics import recall_score
+from sklearn.metrics import precision_score
+
+from threshold in np.arange(0, 1, 0.02):
+  predicted_test = y_pred_one_test > threshold
+  precision = precision_score(y_test, predicted_test)
+  recall = recall_score(y_test, predicted_test)
+  print(
+      'Threshold = {:.2f} | Precision = {:.3f}, Recall = {:.3f}'.format(
+          threshold, precision, recall
+      )
+  )
+
+
+
+from sklearn.metrics import roc_curve
+fpr, tpr, threshold = roc_curve(y_test, y_pred_one_test)
+
+plt.figure(figsize=(8,6))
+plt.plot(fpr, tpr)
+plt.plot(p0,1], [0,1], linestyle='--')
+plt.xlim([-0.1, 1.0])
+plt.ylim([-0.1, 1.01])
+plt.xlabel('False Positive Rate (FPR)')
+plt.ylabel('True Positive Rate (TPR)')
+plt.title('ROC curve')
+plt.show()
